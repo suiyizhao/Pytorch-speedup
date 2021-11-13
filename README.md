@@ -26,7 +26,7 @@ Note: The comment `# new #` in script represents newly added code block (compare
 > **Weakness:**  
 >     - Unbalanced load  
 > **Description:**   
-> DataParallel is very convenient to use, we just need to use DataParallel to package the model:
+> DataParallel is very convenient to use, we just need to use DataParallel to package the model:  
 > ```
 > model = ...
 > model = nn.DataParallel(model)
@@ -45,7 +45,7 @@ Note: The comment `# new #` in script represents newly added code block (compare
 > **Description:**  
 > Unlike `DataParallel` who control multiple GPUs via single-process, `distributed` creates multiple process. we just need to accomplish one code and torch will automatically assign it to n processes, each running on corresponding GPU.  
 > To config distributed model via `torch.distributed`, the following steps needed to be performed:  
-> 1. Get current process index:
+> 1. Get current process index:  
 > ```
 > parser = argparse.ArgumentParser()
 > parser.add_argument('--local_rank', default=-1, type=int, help='node rank for distributed training')
@@ -66,7 +66,7 @@ Note: The comment `# new #` in script represents newly added code block (compare
 > sampler = distributed.DistributedSampler(dataset)
 > dataloader = DataLoader(dataset=dataset, ..., sampler=sampler)
 > ```
-> 5. Package model：
+> 5. Package the model：
 > ```
 > model = ...
 > model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
@@ -111,11 +111,11 @@ Note: The comment `# new #` in script represents newly added code block (compare
 > ```
 ## DALI data loading
 ### *loader_DALI.py* -- Data loading using [nvidia.dali](https://docs.nvidia.com/deeplearning/dali/user-guide/docs/index.html)
-> **Prerequisite:** 
-> 1. [NVIDIA Driver](https://www.nvidia.com/drivers) supporting [CUDA 10.0](https://developer.nvidia.com/cuda-downloads) or later (i.e., 410.48 or later driver releases).
-> 2. PyTorch 0.4 or later.
-> 3. Data organization format that matches the code, the format that matches the loader_DALI.py is as follows:  
-> dataset / (train/test) / (img/gt) / (sub_dir1...sub_dirn) / (img_name1...img_namen)
+> **Prerequisite:**  
+>     - [NVIDIA Driver](https://www.nvidia.com/drivers) supporting [CUDA 10.0](https://developer.nvidia.com/cuda-downloads) or later (i.e., 410.48 or later driver releases)  
+>     - PyTorch 0.4 or later  
+>     - Data organization format that matches the code, the format that matches the loader_DALI.py is as follows:  
+>       &emsp;/dataset / train or test / img or gt / sub_dirs / imgs [[View]](https://github.com/suiyizhao/Template/blob/master/src/loader_DALI.py#:~:text=self.batch_size%20%3D%20batch_size-,img_paths%20%3D%20sorted(glob.glob(data_source%20%2B%20%27/train%27%20%2B%20%27/blurry%27%20%2B%20%27/*/*.*%27)),gt_paths%20%3D%20sorted(glob.glob(data_source%20%2B%20%27/train%27%20%2B%20%27/sharp%27%20%2B%20%27/*/*.*%27)),-self.paths%20%3D%20list)  
 > **Usage:** 
 > ```
 > pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda102
@@ -124,12 +124,86 @@ Note: The comment `# new #` in script represents newly added code block (compare
 > ```
 > **Superiority:**  
 >     - Easy to use  
->     - Accelerate training (inconspicuous)  
+>     - Accelerate data loading  
 > **Weakness:**  
->     - Unbalanced load  
+>     - Occupy video memory  
 > **Description:**   
-> DataParallel is very convenient to use, we just need to use DataParallel to package the model:
+> NVIDIA Data Loading Library (DALI) is a collection of highly optimized building blocks and an execution engine that accelerates the data pipeline for computer vision and audio deep learning applications.  
+> To load dataset using DALI, the following steps needed to be performed:  
+> 1. Config external input iterator:  
 > ```
-> model = ...
-> model = nn.DataParallel(model)
+> eii = ExternalInputIterator(data_source=opt.data_source, batch_size=opt.batch_size, shuffle=True)
+> ```
+> ```
+> # A demo of external input iterator
+> class ExternalInputIterator(object):
+>     def __init__(self, data_source, batch_size, shuffle):
+>         self.batch_size = batch_size
+>         
+>         img_paths = sorted(glob.glob(data_source + '/train' + '/blurry' + '/*/*.*'))
+>         gt_paths = sorted(glob.glob(data_source + '/train' + '/sharp' + '/*/*.*'))
+>         self.paths = list(zip(*(img_paths,gt_paths)))
+>         if shuffle:
+>             random.shuffle(self.paths)
+> 
+>     def __iter__(self):
+>         self.i = 0
+>         return self
+> 
+>     def __next__(self):
+>         imgs = []
+>         gts = []
+> 
+>         if self.i >= len(self.paths):
+>             self.__iter__()
+>             raise StopIteration
+> 
+>         for _ in range(self.batch_size):
+>             img_path, gt_path = self.paths[self.i % len(self.paths)]
+>             imgs.append(np.fromfile(img_path, dtype = np.uint8))
+>             gts.append(np.fromfile(gt_path, dtype = np.uint8))
+>             self.i += 1
+>         return (imgs, gts)
+> 
+>     def __len__(self):
+>         return len(self.paths)
+> 
+>     next = __next__
+> ```
+> 2. Config pipeline:
+> ```
+> pipe = externalSourcePipeline(batch_size=opt.batch_size, num_threads=opt.num_workers, device_id=0, seed=opt.seed, external_data = eii, resize=opt.resize, crop=opt.crop)
+> ```
+> ```
+> # A demo of pipeline
+> @pipeline_def
+> def externalSourcePipeline(external_data, resize, crop):
+>     imgs, gts = fn.external_source(source=external_data, num_outputs=2)
+>     
+>     crop_pos = (fn.random.uniform(range=(0., 1.)), fn.random.uniform(range=(0., 1.)))
+>     flip_p = (fn.random.coin_flip(), fn.random.coin_flip())
+>     
+>     imgs = transform(imgs, resize, crop, crop_pos, flip_p)
+>     gts = transform(gts, resize, crop, crop_pos, flip_p)
+>     return imgs, gts
+> 
+> def transform(imgs, resize, crop, crop_pos, flip_p):
+>     imgs = fn.decoders.image(imgs, device='mixed')
+>     imgs = fn.resize(imgs, resize_y=resize)
+>     imgs = fn.crop(imgs, crop=(crop,crop), crop_pos_x=crop_pos[0], crop_pos_y=crop_pos[1])
+>     imgs = fn.flip(imgs, horizontal=flip_p[0], vertical=flip_p[1])
+>     imgs = fn.transpose(imgs, perm=[2, 0, 1])
+>     imgs = imgs/127.5-1
+>     
+>     return imgs
+> ```
+> 3. Instantiate DALIGenericIterator object:
+> ```
+> dgi = DALIGenericIterator(pipe, output_map=["imgs", "gts"], last_batch_padded=True, last_batch_policy=LastBatchPolicy.PARTIAL, auto_reset=True)
+> ```
+> 4. Read data:
+> ```
+> for i, data in enumerate(dgi):
+>     imgs = data[0]['imgs']
+>     gts = data[0]['gts']
 > ```
