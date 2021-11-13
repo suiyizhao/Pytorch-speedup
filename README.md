@@ -26,3 +26,9 @@ Note: The comment `# new #` in script represents newly added code block (compare
 > ```
 > model = nn.DataParallel(model)
 > ```
+### *train_DDP.py* 
+> **Usage: (two cards for example)** 
+> ```
+> cd Template/src
+> CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 train_DDP.py
+> ```
