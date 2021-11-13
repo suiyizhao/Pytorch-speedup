@@ -14,7 +14,7 @@ Note: The comment `# new #` in script represents newly added code block (compare
 - OS: Ubuntu 18.04.3 LTS
 - DL framework: Pytorch 1.6.0, Torchvision 0.7.0
 ## Single-machine-multiple-cards training (two cards for example)
-### *train_DP.py* -- Parallel computing using `nn.DataParallel`
+### *train_DP.py* -- Parallel computing using [nn.DataParallel](https://pytorch.org/docs/stable/generated/torch.nn.DataParallel.html#torch.nn.DataParallel)
 > **Usage:** 
 > ```
 > cd Template/src
@@ -31,7 +31,7 @@ Note: The comment `# new #` in script represents newly added code block (compare
 > model = ...
 > model = nn.DataParallel(model)
 > ```
-### *train_DDP.py* -- Parallel computing using `torch.distributed`
+### *train_DDP.py* -- Parallel computing using [torch.distributed](https://pytorch.org/docs/stable/distributed.html#)
 > **Usage:** 
 > ```
 > cd Template/src
@@ -73,7 +73,7 @@ Note: The comment `# new #` in script represents newly added code block (compare
 > model = nn.parallel.DistributedDataParallel(model.cuda(), device_ids=[opt.local_rank])
 > ```
 ## Mixed-precision training
-### *train_amp.py* -- mixed-precision training using `torch.cuda.amp`
+### *train_amp.py* -- Mixed-precision training using [torch.cuda.amp](https://pytorch.org/docs/stable/amp.html#)
 > **Usage:** 
 > ```
 > cd Template/src
@@ -110,11 +110,17 @@ Note: The comment `# new #` in script represents newly added code block (compare
 > scaler.update()
 > ```
 ## DALI data loading
-### *loader_DALI.py* -- Data loading using `nvidia.dali`
+### *loader_DALI.py* -- Data loading using [nvidia.dali](https://docs.nvidia.com/deeplearning/dali/user-guide/docs/index.html)
+> **Prerequisite:** 
+> 1. [NVIDIA Driver](https://www.nvidia.com/drivers) supporting [CUDA 10.0](https://developer.nvidia.com/cuda-downloads) or later (i.e., 410.48 or later driver releases).
+> 2. PyTorch 0.4 or later.
+> 3. Data organization format that matches the code, the format that matches the loader_DALI.py is as follows:  
+> dataset / (train/test) / (img/gt) / (sub_dir1...sub_dirn) / (img_name1...img_namen)
 > **Usage:** 
 > ```
+> pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda102
 > cd Template/src
-> python train_DP.py
+> python loader_DALI.py --data_source /path/to/dataset
 > ```
 > **Superiority:**  
 >     - Easy to use  
