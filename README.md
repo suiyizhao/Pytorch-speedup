@@ -1,4 +1,4 @@
-# Template
+# Pytorch-speedup
 ## Script Category Description
 | Category | script |
 | ---- | ---- |
