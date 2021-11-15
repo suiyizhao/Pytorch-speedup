@@ -114,8 +114,7 @@ Note: The comment `# new #` in script represents newly added code block (compare
 > **Prerequisite:**  
 >     - [NVIDIA Driver](https://www.nvidia.com/drivers) supporting [CUDA 10.0](https://developer.nvidia.com/cuda-downloads) or later (i.e., 410.48 or later driver releases)  
 >     - PyTorch 0.4 or later  
->     - Data organization format that matches the code, the format that matches the loader_DALI.py is as follows:  
->       &emsp;/dataset / train or test / img or gt / sub_dirs / imgs [[View]](https://github.com/suiyizhao/Template/blob/master/src/loader_DALI.py#:~:text=self.batch_size%20%3D%20batch_size-,img_paths%20%3D%20sorted(glob.glob(data_source%20%2B%20%27/train%27%20%2B%20%27/blurry%27%20%2B%20%27/*/*.*%27)),gt_paths%20%3D%20sorted(glob.glob(data_source%20%2B%20%27/train%27%20%2B%20%27/sharp%27%20%2B%20%27/*/*.*%27)),-self.paths%20%3D%20list)  
+>     - Data organization matches the [code format](https://github.com/suiyizhao/Template/blob/master/src/loader_DALI.py#:~:text=self.batch_size%20%3D%20batch_size-,img_paths%20%3D%20sorted(glob.glob(data_source%20%2B%20%27/train%27%20%2B%20%27/blurry%27%20%2B%20%27/*/*.*%27)),gt_paths%20%3D%20sorted(glob.glob(data_source%20%2B%20%27/train%27%20%2B%20%27/sharp%27%20%2B%20%27/*/*.*%27)),-self.paths%20%3D%20list)  
 > **Usage:** 
 > ```
 > pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda102
